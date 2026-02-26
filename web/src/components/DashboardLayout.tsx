@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Search, User, Settings, LayoutDashboard, Calendar, Ticket, BarChart3, LifeBuoy } from 'lucide-react';
+import { Bell, Search, User, Settings, LayoutDashboard, Calendar, Ticket, BarChart3, LifeBuoy, MapPin, Users } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 interface NavItemProps {
@@ -8,17 +8,27 @@ interface NavItemProps {
     active?: boolean;
 }
 
-const NavItem = ({ icon: Icon, label, active }: NavItemProps) => (
-    <button className={cn(
-        "flex items-center gap-2.5 px-6 py-2 rounded-full transition-all duration-200 text-sm font-semibold",
-        active ? "bg-secondary/10 text-secondary" : "text-muted-foreground hover:bg-muted"
-    )}>
+interface DashboardLayoutProps {
+    children: React.ReactNode;
+    onSignOut?: () => void;
+    currentView?: string;
+    onViewChange?: (view: any) => void;
+}
+
+const NavItem = ({ icon: Icon, label, active, onClick }: NavItemProps & { onClick?: () => void }) => (
+    <button
+        onClick={onClick}
+        className={cn(
+            "flex items-center gap-2.5 px-6 py-2 rounded-full transition-all duration-200 text-sm font-semibold",
+            active ? "bg-secondary/10 text-secondary" : "text-muted-foreground hover:bg-muted"
+        )}
+    >
         <Icon className="h-4 w-4" />
         {label}
     </button>
 );
 
-export const DashboardLayout = ({ children, onSignOut }: { children: React.ReactNode, onSignOut?: () => void }) => {
+export const DashboardLayout = ({ children, onSignOut, currentView, onViewChange }: DashboardLayoutProps) => {
     return (
         <div className="min-h-screen bg-background soft-gradient-bg">
             {/* Top Navigation */}
@@ -31,11 +41,30 @@ export const DashboardLayout = ({ children, onSignOut }: { children: React.React
                 </div>
 
                 <nav className="flex items-center gap-1">
-                    <NavItem icon={LayoutDashboard} label="Dashboard" active />
-                    <NavItem icon={Calendar} label="Events" />
+                    <NavItem
+                        icon={LayoutDashboard}
+                        label="Dashboard"
+                        active={currentView === 'dashboard'}
+                        onClick={() => onViewChange?.('dashboard')}
+                    />
+                    <NavItem
+                        icon={Calendar}
+                        label="Events"
+                    />
+                    <NavItem
+                        icon={MapPin}
+                        label="Venues"
+                        active={currentView === 'venues'}
+                        onClick={() => onViewChange?.('venues')}
+                    />
+                    <NavItem
+                        icon={Users}
+                        label="Vendors"
+                        active={currentView === 'vendors'}
+                        onClick={() => onViewChange?.('vendors')}
+                    />
                     <NavItem icon={Ticket} label="Tickets" />
                     <NavItem icon={BarChart3} label="Analytics" />
-                    <NavItem icon={LifeBuoy} label="Support" />
                 </nav>
 
                 <div className="flex items-center gap-4">

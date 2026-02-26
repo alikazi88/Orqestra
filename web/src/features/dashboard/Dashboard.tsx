@@ -1,12 +1,21 @@
-import React from 'react';
-import { Card } from './components/ui/Card';
-import { StatCard } from './components/ui/StatCard';
-import { Badge } from './components/ui/Badge';
-import { Calendar, Ticket, User, MessageSquare, Flame } from 'lucide-react';
+import { useState } from 'react';
+import { Card } from '../../components/ui/Card';
+import { StatCard } from '../../components/ui/StatCard';
+import { Badge } from '../../components/ui/Badge';
+import { Calendar, Ticket, User, Flame } from 'lucide-react';
+import { cn } from '../../utils/cn';
+import { NewEventModal } from '../events/NewEventModal';
 
 export const Dashboard = () => {
+    const [isNewEventModalOpen, setIsNewEventModalOpen] = useState(false);
+
     return (
         <div className="flex flex-col gap-8">
+            <NewEventModal
+                isOpen={isNewEventModalOpen}
+                onClose={() => setIsNewEventModalOpen(false)}
+                onCreated={(e) => console.log('Event created:', e)}
+            />
             {/* Metrics Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
@@ -93,7 +102,12 @@ export const Dashboard = () => {
                         <Card>
                             <div className="flex items-center justify-between mb-6">
                                 <h4 className="font-bold">Upcoming Event</h4>
-                                <button className="text-xs bg-muted px-2 py-1 rounded-lg">create event</button>
+                                <button
+                                    onClick={() => setIsNewEventModalOpen(true)}
+                                    className="text-xs bg-primary text-white font-bold px-3 py-1.5 rounded-lg hover:shadow-lg transition-all"
+                                >
+                                    create event
+                                </button>
                             </div>
                             <div className="flex flex-col gap-4">
                                 <Card glass className="p-4 shadow-sm border-white/40">

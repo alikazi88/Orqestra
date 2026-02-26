@@ -53,6 +53,8 @@ function App() {
     useAuthStore.setState({ loading: false });
   };
 
+  const [currentView, setCurrentView] = React.useState<'dashboard' | 'venues' | 'vendors'>('dashboard');
+
   if (loading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-background">
@@ -85,9 +87,24 @@ function App() {
     return <OnboardingFlow onComplete={() => setIsOnboarding(false)} />;
   }
 
+  const renderView = () => {
+    switch (currentView) {
+      case 'venues':
+        return <div className="text-2xl font-bold">Venue Discovery (Coming Soon)</div>;
+      case 'vendors':
+        return <div className="text-2xl font-bold">Vendor Marketplace (Coming Soon)</div>;
+      default:
+        return <Dashboard />;
+    }
+  };
+
   return (
-    <DashboardLayout onSignOut={signOut}>
-      <Dashboard />
+    <DashboardLayout
+      onSignOut={signOut}
+      currentView={currentView}
+      onViewChange={setCurrentView}
+    >
+      {renderView()}
     </DashboardLayout>
   );
 }

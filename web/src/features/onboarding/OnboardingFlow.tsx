@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Globe, Camera, Loader2 } from 'lucide-react';
 import { OnboardingLayout } from './OnboardingLayout';
 import { BrandProfile } from './BrandProfile';
 import { BudgetRange } from './BudgetRange';
-import { Button } from '../../components/ui/Button';
+import { EventTypeSelector } from './EventTypeSelector';
+import { VendorImport } from './VendorImport';
+import { TeamInvite } from './TeamInvite';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { supabase } from '../../lib/supabase';
 
@@ -24,7 +25,7 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
         const newData = { ...data, ...stepData };
         setData(newData);
 
-        if (step === 2) { // Just for now, making it shorter to show flow
+        if (step === 5) {
             await finalizeOnboarding(newData);
         } else {
             setStep(step + 1);
@@ -39,17 +40,23 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
         if (!workspace) return;
 
         try {
-            // Update workspace with brand and budget info
+            // Update workspace with comprehensive onboarding info
             const { data: updatedWs, error } = await supabase
                 .from('workspaces')
                 .update({
                     brand_profile: {
                         website: finalData.website,
                         primaryColor: finalData.primaryColor,
-                        industry: finalData.industry
+                        industry: finalData.industry,
+                        specialties: finalData.specialties
                     },
                     settings: {
-                        budget_tier: finalData.tier
+                        budget_tier: finalData.tier,
+                        onboarding_completed: true,
+                        onboarding_data: {
+                            importMethod: finalData.importMethod,
+                            invitedCount: finalData.invitedEmails?.length || 0
+                        }
                     }
                 })
                 .eq('id', workspace.id)
@@ -74,18 +81,11 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
             title={currentStepInfo.title}
             subtitle={currentStepInfo.subtitle}
         >
-            {step === 1 && (
-                <BrandProfile onNext={handleNext} initialData={data} />
-            )}
-            {step === 2 && (
-                <BudgetRange onNext={handleNext} onBack={handleBack} initialData={data} />
-            )}
-            {step > 2 && (
-                <div className="text-center py-12">
-                    <h3 className="text-xl font-bold mb-4">Step {step} placeholder</h3>
-                    <Button onClick={() => handleNext({})}>Skip Step</Button>
-                </div>
-            )}
+            {step === 1 && <BrandProfile onNext={handleNext} initialData={data} />}
+            {step === 2 && <BudgetRange onNext={handleNext} onBack={handleBack} initialData={data} />}
+            {step === 3 && <EventTypeSelector onNext={handleNext} onBack={handleBack} initialData={data} />}
+            {step === 4 && <VendorImport onNext={handleNext} onBack={handleBack} />}
+            {step === 5 && <TeamInvite onComplete={handleNext} onBack={handleBack} />}
         </OnboardingLayout>
     );
 };
