@@ -1,0 +1,520 @@
+# .antigravity
+# Orqestra — Project Skills & Standards File
+# Antigravity Engineering Team
+# Version 1.0
+#
+# This file is the single source of engineering truth for the Orqestra project.
+# Every engineer, every AI assistant, and every code review references this file.
+# When in doubt, this file wins.
+
+---
+
+## project
+
+name: Orqestra
+type: multi-tenant SaaS
+description: AI-powered event planning platform for brands in India
+status: pre-development
+
+stack:
+  web: React + Vite (TypeScript)
+  mobile: React Native (Expo managed workflow)
+  backend: Supabase (PostgreSQL, Auth, Storage, Realtime, Edge Functions / Deno)
+  ai: Anthropic Claude API (via Supabase Edge Functions only)
+  payments: Razorpay (collections + payouts)
+  messaging: WhatsApp Business API, Twilio SMS, Resend (email)
+  maps: Google Maps API
+  notifications: Expo Push Notifications
+
+environments:
+  development: local Supabase instance via supabase CLI
+  staging: Supabase project — orqestra-staging
+  production: Supabase project — orqestra-prod
+
+---
+
+## prd
+
+location: ./docs/Orqestra_PRD_v1.0.md
+read_before_coding: true
+source_of_truth: true
+
+instructions: |
+  Read the full PRD before starting any feature.
+  The PRD defines every screen, user flow, data model, integration, and
+  non-functional requirement. Do not infer or guess requirements — look them up.
+  If the PRD is silent on something, flag it before proceeding.
+
+key_concepts:
+  - "AI Blueprint: AI-generated event plan at event creation. Covers venue, vendors, budget, timeline, risks."
+  - "Event Health Score: Live readiness score across 12 dimensions. Updates in real time."
+  - "Run Sheet: Minute-by-minute event schedule. Shared across team in real time via Supabase Realtime."
+  - "Event Day Mode: Simplified mobile interface active 24h before event. Must work under stress."
+  - "Vendor Risk Score: Platform-generated vendor reliability indicator. Based on completion rate, disputes, no-shows."
+  - "AI Memory System: Workspace-level insights from past events. Fed into new AI Blueprints."
+  - "RFQ: Request for Quote. Structured brief sent to vendors for pricing and availability."
+  - "ITC: Input Tax Credit. GST paid on vendor invoices claimable by registered brands."
+
+user_types:
+  - workspace_owner
+  - event_director
+  - team_member (role-scoped: logistics, finance, guest_relations, vendor_coordinator, social_media, on_ground)
+  - vendor (vendor portal only)
+  - sponsor (sponsor portal only)
+  - guest (ticketing and RSVP only)
+
+---
+
+## database
+
+engine: PostgreSQL (via Supabase)
+multi_tenancy: workspace_id on every table. RLS enforced at DB layer.
+
+rls:
+  required: true
+  mandatory_on: all tables without exception
+  test_required: true
+  test_before_deploy: true
+  policy_comment_required: true
+
+  rule: |
+    Every table must have RLS enabled.
+    Every table must have policies for SELECT, INSERT, UPDATE, DELETE.
+    Policies must reference auth.uid() and workspace_id.
+    Write RLS tests before marking a feature complete.
+    A feature is not done if RLS is not tested.
+
+indexes:
+  required_on:
+    - workspace_id (all tables)
+    - event_id (all event-scoped tables)
+    - created_at (all tables — for range queries)
+    - status (tasks, run_sheet_items, incidents, contracts)
+    - city (venues, vendors)
+    - category (vendors)
+  comment_required: true
+  rule: Document the query pattern each index supports in a SQL comment.
+
+migrations:
+  location: supabase/migrations/
+  naming: YYYYMMDDHHMMSS_description.sql
+  comment_required: true
+  rule: |
+    Every migration file must have a header comment:
+    -- Migration: <description>
+    -- Date: <date>
+    -- Reason: <why this change is needed>
+    -- Tables affected: <list>
+    -- RLS: <RLS policies added or modified>
+
+core_tables:
+  workspaces: [id, name, brand_profile, subscription_tier, settings, created_at, updated_at]
+  users: [id, workspace_id, role, name, email, phone, preferences, created_at]
+  events: [id, workspace_id, title, type, date, city, status, budget, health_score, created_at, updated_at]
+  venues: [id, name, city, tier, capacity, vibe_tags, pricing, amenities, photos]
+  vendors: [id, workspace_id, name, category, tier, risk_score, portfolio, pricing, created_at]
+  contracts: [id, event_id, vendor_id, file_url, status, payment_schedule, signed_at]
+  guests: [id, event_id, name, tier, dietary, rsvp_status, seat_id, check_in_time]
+  budget_lines: [id, event_id, category, estimated, committed, actual, gst_rate, itc_eligible, tds_applicable]
+  tasks: [id, event_id, assigned_to, title, status, due_date, dependencies, priority]
+  run_sheet_items: [id, event_id, time, title, owner_id, vendor_id, status, notes, dependencies]
+  incidents: [id, event_id, reporter_id, category, description, severity, status, resolved_at]
+  sponsor_tiers: [id, event_id, tier_name, deliverables, sponsor_brand, amount_committed, amount_received]
+  ai_memories: [id, workspace_id, category, insight, confidence, derived_from_event_id, created_at]
+  festival_calendar: [id, name, city, start_date, end_date, impact_type, price_surge_pct]
+  vendor_reviews: [id, vendor_id, event_id, workspace_id, rating, context_note, created_at]
+
+pagination:
+  required: true
+  default_page_size: 20
+  max_page_size: 100
+  rule: No unbounded SELECT queries in production. All list views paginate from day one.
+
+---
+
+## security
+
+principles:
+  - RLS at DB layer is the first line of defense. Application layer is the second.
+  - Never trust the client. Validate everything server-side.
+  - No secrets in frontend code. Ever.
+  - No direct AI API calls from frontend. All AI goes through Edge Functions.
+  - No direct payment API calls from frontend. All payments go through Edge Functions.
+  - No raw PII in AI prompts. Pseudonymize before constructing prompts.
+
+tokens:
+  access_token_expiry: 1 hour
+  refresh_token_expiry: 7 days
+  rotation: enabled
+  mobile_storage: Expo SecureStore only. Never AsyncStorage for tokens.
+
+file_access:
+  signed_urls: required for all private files
+  signed_url_expiry: 24 hours maximum
+  private_buckets: [contracts, financial-documents, guest-data, brand-assets]
+  public_buckets: [venue-photos, vendor-portfolio, ticketing-page-assets]
+
+rate_limiting:
+  required_on: [ai-calls, payment-triggers, whatsapp-sends, auth-endpoints]
+  implementation: Supabase table tracking calls per workspace per time window
+  ai_limit: per subscription tier (Starter: 50/day, Growth: 200/day, Scale: unlimited)
+
+input_validation:
+  client_side: required (UX)
+  server_side: required (security)
+  rule: Client validation is for user experience. Server validation is for security. Both are mandatory.
+
+cross_workspace:
+  test_required: true
+  rule: |
+    Write explicit tests that attempt to access another workspace's data.
+    These tests must fail. If they pass, there is a security bug.
+    Cross-workspace isolation is tested before every deployment.
+
+---
+
+## edge_functions
+
+runtime: Deno (Supabase Edge Functions)
+location: supabase/functions/
+
+naming: one function per domain operation (not one monolithic function)
+
+functions:
+  - ai-blueprint
+  - ai-budget-prediction
+  - ai-vendor-shortlist
+  - ai-moodboard
+  - ai-rfq-brief
+  - ai-caption-generator
+  - ai-shot-list
+  - ai-sponsor-outreach
+  - ai-debrief-session
+  - ai-runsheet-solver
+  - ai-attendance-prediction
+  - ai-conflict-detection
+  - vendor-payment-payout
+  - ticket-purchase
+  - whatsapp-send
+  - sms-send
+  - email-send
+  - rsvp-sequence-trigger
+  - post-event-report-generate
+  - guest-survey-send
+  - festival-conflict-check
+  - vendor-risk-score-update
+  - health-score-recalculate
+
+header_comment_required: true
+header_format: |
+  /**
+   * Function: <name>
+   * Purpose: <what it does>
+   * Trigger: <what calls it — client action, cron, webhook>
+   * Auth: <required auth level — service_role / user JWT / public>
+   * Inputs: <expected request body shape>
+   * Outputs: <response shape>
+   * External APIs: <list any external APIs called>
+   * Rate limit: <calls per workspace per time window>
+   * PII handling: <how PII is handled if relevant>
+   */
+
+error_handling: |
+  All Edge Functions must handle:
+  - Validation failure (400)
+  - Unauthorized access (401/403)
+  - External API failure (502 with retry guidance)
+  - Internal error (500 with structured log)
+  Never return raw error messages to the client. Log internally, return safe messages.
+
+ai_calls:
+  model: claude-sonnet-4-20250514
+  pii_rule: Pseudonymize all PII before constructing prompts
+  async_threshold: 5 seconds (above this, make async with job ID + Realtime notification)
+  async_features: [moodboard, sponsor-deck, post-event-report, ai-debrief]
+  sync_features: [blueprint, caption, rfq-brief, runsheet-solver, conflict-check]
+  timeout: 10 seconds for sync calls. 60 seconds for async.
+
+---
+
+## frontend_web
+
+framework: React + Vite
+language: TypeScript (strict mode)
+styling: Tailwind CSS with custom design system
+components: Radix UI / shadcn/ui (headless, accessible)
+state_server: TanStack Query (React Query)
+state_client: Zustand
+routing: React Router v6
+charts: Recharts
+drag_drop: DnD Kit
+supabase_client: @supabase/supabase-js
+
+typescript:
+  no_any: true
+  strict: true
+  rule: No `any` type. Define all types explicitly. Shared types live in src/types/.
+
+folder_structure:
+  src/api/: Supabase query functions, organised by domain
+  src/components/: Shared reusable UI components
+  src/features/: Feature modules (each has own components, hooks, types)
+  src/hooks/: Shared custom hooks
+  src/lib/: Third-party client setup (supabase.ts, razorpay.ts, etc.)
+  src/pages/: Route-level page components
+  src/stores/: Zustand global state stores
+  src/types/: Shared TypeScript interfaces and enums
+  src/utils/: Pure utility functions (no side effects)
+  src/constants/: App-wide constants (routes, config keys, enums, table names)
+
+cache_times:
+  event_data: 5 minutes
+  vendor_directory: 30 minutes
+  user_session: indefinite until invalidated
+  festival_calendar: 24 hours
+  health_score: 30 seconds (near-live)
+
+ui_states:
+  required: [loading, empty, error, success]
+  rule: |
+    Every data-fetching component has all four states designed and implemented.
+    A blank white screen during loading is not acceptable.
+    Empty states have a helpful call-to-action, not just "No data found."
+    Error states have a retry action where possible.
+
+optimistic_updates:
+  required_for: [run_sheet_status, task_completion, checkin_scan, incident_status]
+  rule: High-frequency event day actions update the UI before server confirmation.
+
+forms:
+  validation: react-hook-form + zod
+  rule: All forms validate client-side before submission. All inputs sanitized.
+
+---
+
+## frontend_mobile
+
+framework: React Native
+toolchain: Expo (managed workflow)
+language: TypeScript (strict)
+navigation: React Navigation v6
+state_server: TanStack Query
+state_client: Zustand
+notifications: Expo Notifications
+camera: Expo Camera + Expo Barcode Scanner
+secure_storage: Expo SecureStore
+animations: React Native Reanimated
+
+build:
+  tool: EAS Build
+  not_expo_go: true
+  reason: Expo Go breaks push notifications, camera, and SecureStore
+
+dark_mode: required
+reason: Event Day Mode is used in dark venues. Dark mode is not optional.
+
+minimum_touch_target: 48x48px
+reason: Event Day Mode is operated under stress. Targets must be large enough to tap reliably.
+
+offline_resilience:
+  event_day_run_sheet: must be readable offline (cache in AsyncStorage — read-only)
+  mutation_queue: mutations queue locally when offline, sync on reconnection
+  implementation: simple queue in AsyncStorage, flush on network restore
+
+event_day_mode:
+  priority: highest in mobile codebase
+  performance: sub-1-second interactions for check-in, run sheet updates, incident reports
+  battery: Realtime connections use exponential backoff when app is backgrounded
+  contrast: high contrast UI, minimum font size 16sp for outdoor readability
+
+token_storage: Expo SecureStore only
+rule: Never store auth tokens or sensitive data in AsyncStorage.
+
+folder_structure:
+  src/api/: Supabase queries (shared pattern with web)
+  src/components/: Shared components
+  src/features/: Feature modules
+  src/hooks/: Shared hooks
+  src/lib/: Client setup
+  src/navigation/: React Navigation config
+  src/screens/: Screen components
+  src/stores/: Zustand stores
+  src/types/: TypeScript types
+  src/utils/: Utilities
+  src/constants/: Constants
+
+---
+
+## realtime
+
+engine: Supabase Realtime
+channel_scope: scoped to event_id or workspace_id — never subscribe to entire tables
+
+subscriptions:
+  run_sheet_items: channel per event_id
+  incidents: channel per event_id
+  door_count: channel per event_id
+  vendor_checkins: channel per event_id
+  task_updates: channel per workspace_id
+  notifications: channel per user_id
+
+checkin_optimization: |
+  For large events (5000+ guests), check-in writes are batched in 5-second intervals
+  rather than row-by-row to reduce Realtime write amplification.
+
+reconnection: exponential backoff on disconnect, max 30 second interval
+
+---
+
+## india_specific
+
+payments:
+  collection: Razorpay (UPI, cards, net banking)
+  payouts: Razorpay (UPI to vendor bank accounts)
+  large_payments: NEFT/RTGS for amounts above ₹2 lakhs
+  gst: required on all invoice flows
+  tds: flag and track for professional service vendor payments
+
+gst:
+  required: true
+  rates: [5, 12, 18, 28]
+  itc_tracking: required
+  tds_tracking: required
+  export: CSV for CA/finance team
+
+whatsapp:
+  bsp: Gupshup or Wati (evaluate on throughput and India pricing)
+  use_cases: [vendor_briefs, vendor_confirmations, payment_alerts, guest_rsvps, day_of_alerts]
+  rule: All WhatsApp sends go through Edge Function. Log all messages in platform regardless of channel.
+
+festival_calendar:
+  table: festival_calendar
+  auto_check: true
+  trigger: when event date is set
+  cities_covered: [Mumbai, Delhi, Bangalore, Hyderabad, Chennai, Pune, Jaipur, Kochi, Chandigarh]
+
+compliance_tasks:
+  auto_generate: true
+  items: [police_noc, fssai, sound_permission, fire_safety_noc]
+  trigger: event creation (based on event type and city)
+  assignee_default: logistics_lead
+  lead_times: city and event-type specific
+
+city_tiers:
+  tier_1a: [Mumbai, Delhi NCR]
+  tier_1b: [Bangalore, Hyderabad, Chennai]
+  tier_2: [Pune, Jaipur, Kochi, Chandigarh, Surat, Lucknow]
+  rule: AI budget predictions, vendor risk, and timeline recommendations adjust per city tier.
+
+language:
+  launch: English + Hindi (vendor communication module)
+  phase_2: Marathi, Tamil, Telugu, Kannada
+
+---
+
+## testing
+
+rls_tests:
+  required: true
+  when: before feature is marked done
+  include: [authorized access succeeds, unauthorized access fails, cross-workspace access fails]
+
+edge_function_tests:
+  required: true
+  cases: [happy path, validation failure, unauthorized, external API failure (mocked)]
+
+frontend_integration_tests:
+  required_flows: [auth, event_creation, ticket_purchase, qr_checkin, run_sheet_update]
+
+e2e_event_day:
+  required: true
+  scenarios: [checkin_scan, run_sheet_update, incident_raise, vendor_checkin]
+
+cross_workspace_isolation:
+  required: true
+  run_before: every deployment
+  rule: Tests must attempt cross-workspace data access and confirm it fails.
+
+---
+
+## documentation
+
+architecture:
+  file: ARCHITECTURE.md (repo root)
+  required_sections: [system overview, key decisions, rationale, data flow diagrams, external integrations]
+
+edge_functions:
+  header_comment: required (see edge_functions.header_format above)
+
+database:
+  migration_comment: required
+  rls_policy_comment: required
+  index_comment: required
+
+complex_logic:
+  comment_required: true
+  applies_to: [seating algorithm, AI prompt construction, vendor risk score, health score calculation, festival conflict detection]
+
+---
+
+## code_style
+
+no_console_log: true (use structured logging utility)
+no_hardcoded_strings: true (use constants files)
+no_any_typescript: true
+error_messages_friendly: true (user-facing), detailed: true (server logs)
+loading_empty_error_states: required on all data-fetching components
+async_error_handling: required on all async operations
+
+commits:
+  format: conventional commits (feat:, fix:, chore:, docs:, refactor:, test:)
+  scope: include module name (feat(vendor): add risk score display)
+
+pull_requests:
+  rls_checklist: confirm RLS policies written and tested
+  security_checklist: confirm no secrets in code, no raw PII in AI prompts
+  cross_workspace_checklist: confirm isolation tested
+  ui_states_checklist: confirm loading/empty/error states implemented
+
+---
+
+## deployment
+
+web:
+  platform: Vercel or Netlify
+  ci: GitHub Actions
+  preview_deploys: on every PR
+
+mobile:
+  build: EAS Build
+  ota_updates: Expo Updates (for minor fixes, not native changes)
+  distribution: App Store (iOS) + Play Store (Android)
+
+supabase:
+  migrations: run via supabase CLI on deploy
+  edge_functions: deploy via supabase CLI
+  secrets: managed in Supabase dashboard — never in code
+
+environments:
+  dev: local supabase (supabase start)
+  staging: mirrors production schema, seeded with anonymized test data
+  production: no direct DB access. All changes via migrations.
+
+---
+
+## what_not_to_do
+
+- Ship a feature without RLS policies written and tested
+- Use `any` in TypeScript
+- Hardcode API keys, secrets, or environment-specific values
+- Call the Anthropic API directly from the frontend
+- Call the Razorpay API directly from the frontend
+- Store auth tokens in AsyncStorage on mobile
+- Write a SELECT query without a WHERE workspace_id clause
+- Create a list view without pagination
+- Skip loading, empty, or error states
+- Write a migration without a RLS policy
+- Deploy without running cross-workspace isolation tests
+- Send raw guest PII to the AI API
+- Create a public Supabase Storage bucket for private documents
+- Use Expo Go for anything beyond initial setup testing

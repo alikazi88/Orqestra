@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/20;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-soft rounded-3xl;
+  }
+  
+  .pill-nav {
+    @apply px-4 py-2 rounded-full transition-all duration-200 text-sm font-medium;
+  }
+  
+  .pill-nav-active {
+    @apply bg-secondary/10 text-secondary;
+  }
+}
+
+.soft-gradient-bg {
+  background: radial-gradient(circle at 10% 20%, rgba(143, 183, 85, 0.05) 0%, rgba(99, 102, 241, 0.02) 90%);
+}
