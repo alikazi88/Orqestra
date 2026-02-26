@@ -4,6 +4,7 @@ import { Dashboard } from './features/dashboard/Dashboard';
 import { Login } from './features/auth/Login';
 import { SignUp } from './features/auth/SignUp';
 import { WorkspaceSelector } from './features/auth/WorkspaceSelector';
+import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { useAuthStore } from './stores/useAuthStore';
 import { supabase } from './lib/supabase';
 import { Loader2 } from 'lucide-react';
@@ -11,12 +12,17 @@ import { Loader2 } from 'lucide-react';
 function App() {
   const { user, loading, setUser, workspace, setWorkspace, signOut } = useAuthStore();
   const [view, setView] = React.useState<'login' | 'signup'>('login');
+  const [isOnboarding, setIsOnboarding] = React.useState(false);
 
   useEffect(() => {
     // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      useAuthStore.setState({ loading: false });
+      if (session?.user) {
+        checkUserWorkspace(session.user.id);
+      } else {
+        useAuthStore.setState({ loading: false });
+      }
     });
 
     // Listen for auth changes
@@ -24,11 +30,28 @@ function App() {
       setUser(session?.user ?? null);
       if (!session) {
         setWorkspace(null);
+        setIsOnboarding(false);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [setUser, setWorkspace]);
+
+  const checkUserWorkspace = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('workspace_id, workspaces(*)')
+      .eq('id', userId)
+      .single();
+
+    if (!error && data?.workspaces) {
+      setWorkspace(data.workspaces);
+      // Check if onboarding is needed (very simple check for this demo)
+      const needsOnboarding = !data.workspaces.brand_profile || Object.keys(data.workspaces.brand_profile).length === 0;
+      setIsOnboarding(needsOnboarding);
+    }
+    useAuthStore.setState({ loading: false });
+  };
 
   if (loading) {
     return (
@@ -51,7 +74,15 @@ function App() {
   }
 
   if (!workspace) {
-    return <WorkspaceSelector onSelect={(ws) => setWorkspace(ws)} />;
+    return <WorkspaceSelector onSelect={(ws) => {
+      setWorkspace(ws);
+      const needsOnboarding = !ws.brand_profile || Object.keys(ws.brand_profile).length === 0;
+      setIsOnboarding(needsOnboarding);
+    }} />;
+  }
+
+  if (isOnboarding) {
+    return <OnboardingFlow onComplete={() => setIsOnboarding(false)} />;
   }
 
   return (
