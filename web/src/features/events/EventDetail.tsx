@@ -37,6 +37,10 @@ import { AIDebriefSession } from '../post-event/AIDebriefSession';
 import { PostEventReport } from '../post-event/PostEventReport';
 import { BrandEquityTracker } from '../post-event/BrandEquityTracker';
 import { SponsorshipDeliverableTracker } from '../post-event/SponsorshipDeliverableTracker';
+import { NOCTaskGenerator } from '../compliance/NOCTaskGenerator';
+import { MultiCityBenchmarks } from '../compliance/MultiCityBenchmarks';
+import { DecorTrendEngine } from '../decor/DecorTrendEngine';
+import { AttendanceAnalytics } from '../guests/AttendanceAnalytics';
 
 interface EventDetailProps {
     eventId: string;
@@ -275,6 +279,8 @@ export const EventDetail = ({ eventId, onBack }: EventDetailProps) => {
                         <GuestList eventId={eventId} workspaceId={workspace?.id || ''} />
                         <div className="h-px bg-border/40" />
                         <ReminderSettings eventId={eventId} workspaceId={workspace?.id || ''} />
+                        <div className="h-px bg-border/40" />
+                        <AttendanceAnalytics />
                     </div>
                 </TabsContent>
 
@@ -318,6 +324,7 @@ export const EventDetail = ({ eventId, onBack }: EventDetailProps) => {
                     <div className="space-y-12">
                         <MoodBoardStudio />
                         <SustainabilityFlags />
+                        <DecorTrendEngine />
                     </div>
                 </TabsContent>
 
@@ -332,7 +339,7 @@ export const EventDetail = ({ eventId, onBack }: EventDetailProps) => {
                     </div>
                 </TabsContent>
 
-                {['vendors', 'runsheet'].map((tabValue) => (
+                {['runsheet'].map((tabValue) => (
                     <TabsContent key={tabValue} value={tabValue} className="mt-8">
                         <Card className="p-12 text-center bg-white/50 backdrop-blur-sm border-dashed border-2">
                             <h3 className="text-xl font-bold mb-2 uppercase tracking-tight">Module Coming Soon</h3>
@@ -340,6 +347,13 @@ export const EventDetail = ({ eventId, onBack }: EventDetailProps) => {
                         </Card>
                     </TabsContent>
                 ))}
+
+                <TabsContent value="vendors" className="mt-8">
+                    <div className="space-y-12">
+                        <NOCTaskGenerator />
+                        <MultiCityBenchmarks />
+                    </div>
+                </TabsContent>
             </Tabs>
         </div>
     );
