@@ -28,6 +28,7 @@ import { EventBrandingBuilder } from '../ticketing/EventBrandingBuilder';
 import { WaitlistManager } from '../ticketing/WaitlistManager';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { BudgetBuilder } from '../budget/BudgetBuilder';
 
 interface EventDetailProps {
     eventId: string;
@@ -301,7 +302,11 @@ export const EventDetail = ({ eventId, onBack }: EventDetailProps) => {
                     <SeatingChart eventId={eventId} workspaceId={workspace?.id || ''} />
                 </TabsContent>
 
-                {['planning', 'vendors', 'runsheet', 'budget', 'post-event'].map((tabValue) => (
+                <TabsContent value="budget" className="mt-8">
+                    <BudgetBuilder eventId={eventId} workspaceId={workspace?.id || ''} />
+                </TabsContent>
+
+                {['planning', 'vendors', 'runsheet', 'post-event'].map((tabValue) => (
                     <TabsContent key={tabValue} value={tabValue} className="mt-8">
                         <Card className="p-12 text-center bg-white/50 backdrop-blur-sm border-dashed border-2">
                             <h3 className="text-xl font-bold mb-2 uppercase tracking-tight">Module Coming Soon</h3>
