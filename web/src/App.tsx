@@ -10,12 +10,16 @@ import { VendorMarketplace } from './features/vendors/VendorMarketplace';
 import { EventsList } from './features/events/EventsList';
 import { EventDetail } from './features/events/EventDetail';
 import { Landing } from './features/auth/Landing';
+import { PublicEventPage } from './features/ticketing/PublicEventPage';
 import { useAuthStore } from './stores/useAuthStore';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { Loader2 } from 'lucide-react';
 
 function App() {
   const { user, loading, setUser, workspace, setWorkspace, signOut } = useAuthStore();
+  const location = useLocation();
+
   const [view, setView] = React.useState<'landing' | 'login' | 'signup'>('landing');
   const [isOnboarding, setIsOnboarding] = React.useState(false);
   const [currentView, setCurrentView] = React.useState<'dashboard' | 'venues' | 'vendors' | 'events' | 'event-detail'>('dashboard');
@@ -123,13 +127,39 @@ function App() {
   };
 
   return (
-    <DashboardLayout
-      onSignOut={signOut}
-      currentView={currentView}
-      onViewChange={setCurrentView}
-    >
-      {renderView()}
-    </DashboardLayout>
+    <Routes>
+      <Route path="/e/:slug" element={<PublicEventPage />} />
+      <Route path="*" element={
+        !user ? (
+          view === 'landing' ? (
+            <Landing
+              onGetStarted={() => setView('signup')}
+              onSignIn={() => setView('login')}
+            />
+          ) : view === 'login' ? (
+            <Login onSwitch={() => setView('signup')} />
+          ) : (
+            <SignUp onSwitch={() => setView('login')} />
+          )
+        ) : !workspace ? (
+          <WorkspaceSelector onSelect={(ws) => {
+            setWorkspace(ws);
+            const needsOnboarding = !ws.brand_profile || Object.keys(ws.brand_profile).length === 0;
+            setIsOnboarding(needsOnboarding);
+          }} />
+        ) : isOnboarding ? (
+          <OnboardingFlow onComplete={() => setIsOnboarding(false)} />
+        ) : (
+          <DashboardLayout
+            onSignOut={signOut}
+            currentView={currentView}
+            onViewChange={setCurrentView}
+          >
+            {renderView()}
+          </DashboardLayout>
+        )
+      } />
+    </Routes>
   );
 }
 

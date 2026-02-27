@@ -21,6 +21,11 @@ import {
 import { supabase } from '../../lib/supabase';
 import { cn } from '../../utils/cn';
 import { GuestList } from '../guests/GuestList';
+import { SeatingChart } from '../guests/seating/SeatingChart';
+import { ReminderSettings } from '../guests/reminders/ReminderSettings';
+import { TicketTypeManager } from '../ticketing/TicketTypeManager';
+import { EventBrandingBuilder } from '../ticketing/EventBrandingBuilder';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { useAuthStore } from '../../stores/useAuthStore';
 
 interface EventDetailProps {
@@ -32,7 +37,6 @@ export const EventDetail = ({ eventId, onBack }: EventDetailProps) => {
     const { workspace } = useAuthStore();
     const [event, setEvent] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('Overview');
 
     useEffect(() => {
         const fetchEvent = async () => {
@@ -212,63 +216,94 @@ export const EventDetail = ({ eventId, onBack }: EventDetailProps) => {
                 </Card>
             </div>
 
-            {/* Content Area */}
-            {activeTab === 'Overview' && (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {healthDimensions.map((dim, i) => (
-                        <Card key={i} className="p-5 flex flex-col items-center text-center transition-all hover:border-primary/40 hover:scale-[1.02] cursor-default">
-                            <div className={cn(
-                                "h-12 w-12 rounded-2xl flex items-center justify-center mb-4 transition-colors",
-                                dim.score === 100 ? "bg-primary/10 text-primary" :
-                                    dim.score > 70 ? "bg-accent/10 text-accent" :
-                                        dim.score > 30 ? "bg-secondary/10 text-secondary" : "bg-red-500/10 text-red-500"
-                            )}>
-                                <dim.icon className="h-6 w-6" />
-                            </div>
-                            <h5 className="font-bold text-sm mb-1">{dim.name}</h5>
-                            <div className="h-1.5 w-full bg-muted rounded-full mt-2">
-                                <div
-                                    className={cn(
-                                        "h-full rounded-full transition-all duration-1000",
-                                        dim.score === 100 ? "bg-primary" :
-                                            dim.score > 70 ? "bg-accent" :
-                                                dim.score > 30 ? "bg-secondary" : "bg-red-500"
-                                    )}
-                                    style={{ width: `${dim.score}%` }}
+            {/* Secondary Navigation (Tabs) */}
+            <Tabs defaultValue="overview" className="w-full">
+                <TabsList className="flex gap-2 p-1.5 bg-muted/50 rounded-[32px] border border-border/40 w-fit mx-auto sticky bottom-8 shadow-2xl backdrop-blur-md z-50">
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="planning">Planning</TabsTrigger>
+                    <TabsTrigger value="vendors">Vendors</TabsTrigger>
+                    <TabsTrigger value="guests">Guests</TabsTrigger>
+                    <TabsTrigger value="ticketing">Ticketing</TabsTrigger>
+                    <TabsTrigger value="seating">Seating</TabsTrigger>
+                    <TabsTrigger value="runsheet">Run Sheet</TabsTrigger>
+                    <TabsTrigger value="budget">Budget</TabsTrigger>
+                    <TabsTrigger value="post-event">Post-Event</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="overview" className="mt-8">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        {healthDimensions.map((dim, i) => (
+                            <Card key={i} className="p-5 flex flex-col items-center text-center transition-all hover:border-primary/40 hover:scale-[1.02] cursor-default">
+                                <div className={cn(
+                                    "h-12 w-12 rounded-2xl flex items-center justify-center mb-4 transition-colors",
+                                    dim.score === 100 ? "bg-primary/10 text-primary" :
+                                        dim.score > 70 ? "bg-accent/10 text-accent" :
+                                            dim.score > 30 ? "bg-secondary/10 text-secondary" : "bg-red-500/10 text-red-500"
+                                )}>
+                                    <dim.icon className="h-6 w-6" />
+                                </div>
+                                <h5 className="font-bold text-sm mb-1">{dim.name}</h5>
+                                <div className="h-1.5 w-full bg-muted rounded-full mt-2">
+                                    <div
+                                        className={cn(
+                                            "h-full rounded-full transition-all duration-1000",
+                                            dim.score === 100 ? "bg-primary" :
+                                                dim.score > 70 ? "bg-accent" :
+                                                    dim.score > 30 ? "bg-secondary" : "bg-red-500"
+                                        )}
+                                        style={{ width: `${dim.score}%` }}
+                                    />
+                                </div>
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground mt-2 tracking-widest">{dim.status}</span>
+                            </Card>
+                        ))}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="guests" className="mt-8">
+                    <div className="flex flex-col gap-12">
+                        <GuestList eventId={eventId} workspaceId={workspace?.id || ''} />
+                        <div className="h-px bg-border/40" />
+                        <ReminderSettings eventId={eventId} workspaceId={workspace?.id || ''} />
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="ticketing" className="mt-8">
+                    <div className="space-y-12">
+                        <Tabs defaultValue="inventory" className="w-full">
+                            <TabsList className="mb-8 p-1.5 bg-muted/30 rounded-2xl border border-border/40 w-fit mx-auto">
+                                <TabsTrigger value="inventory" className="px-8 py-2 text-xs uppercase tracking-widest font-black">Tickets</TabsTrigger>
+                                <TabsTrigger value="branding" className="px-8 py-2 text-xs uppercase tracking-widest font-black">Branding</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="inventory" className="mt-0">
+                                <TicketTypeManager eventId={eventId} workspaceId={workspace?.id || ''} />
+                            </TabsContent>
+
+                            <TabsContent value="branding" className="mt-0">
+                                <EventBrandingBuilder
+                                    eventId={eventId}
+                                    initialBranding={event?.branding}
+                                    initialSlug={event?.slug}
                                 />
-                            </div>
-                            <span className="text-[10px] uppercase font-bold text-muted-foreground mt-2 tracking-widest">{dim.status}</span>
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="seating" className="mt-8">
+                    <SeatingChart eventId={eventId} workspaceId={workspace?.id || ''} />
+                </TabsContent>
+
+                {['planning', 'vendors', 'runsheet', 'budget', 'post-event'].map((tabValue) => (
+                    <TabsContent key={tabValue} value={tabValue} className="mt-8">
+                        <Card className="p-12 text-center bg-white/50 backdrop-blur-sm border-dashed border-2">
+                            <h3 className="text-xl font-bold mb-2 uppercase tracking-tight">Module Coming Soon</h3>
+                            <p className="text-muted-foreground font-medium"> The {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} hub is currently being automated for your workspace.</p>
                         </Card>
-                    ))}
-                </div>
-            )}
-
-            {activeTab === 'Guests' && (
-                <GuestList eventId={eventId} workspaceId={workspace?.id || ''} />
-            )}
-
-            {/* Placeholder for other tabs */}
-            {['Planning', 'Vendors', 'Run Sheet', 'Budget', 'Post-Event'].includes(activeTab) && (
-                <Card className="p-12 text-center">
-                    <p className="text-muted-foreground font-medium">The {activeTab} module is coming soon to your workspace.</p>
-                </Card>
-            )}
-
-            {/* Secondary Navigation (Mock) */}
-            <div className="flex gap-2 p-1.5 bg-muted/50 rounded-[32px] border border-border/40 w-fit mx-auto sticky bottom-8 shadow-2xl backdrop-blur-md">
-                {['Overview', 'Planning', 'Vendors', 'Guests', 'Run Sheet', 'Budget', 'Post-Event'].map((item) => (
-                    <button
-                        key={item}
-                        onClick={() => setActiveTab(item)}
-                        className={cn(
-                            "px-6 py-2.5 rounded-full text-sm font-bold transition-all",
-                            activeTab === item ? "bg-white text-primary shadow-lg" : "text-muted-foreground hover:bg-white/50"
-                        )}
-                    >
-                        {item}
-                    </button>
+                    </TabsContent>
                 ))}
-            </div>
+            </Tabs>
         </div>
     );
 };

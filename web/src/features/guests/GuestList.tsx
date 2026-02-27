@@ -20,6 +20,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { cn } from '../../utils/cn';
 import { CSVImportModal } from './CSVImportModal';
+import { GuestProfileModal } from './GuestProfileModal';
 
 interface Guest {
     id: string;
@@ -44,6 +45,8 @@ export const GuestList = ({ eventId, workspaceId }: GuestListProps) => {
     const [selectedTier, setSelectedTier] = useState<string>('all');
     const [isSegmenting, setIsSegmenting] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     useEffect(() => {
         fetchGuests();
@@ -206,7 +209,11 @@ export const GuestList = ({ eventId, workspaceId }: GuestListProps) => {
                                 </tr>
                             ) : (
                                 filteredGuests.map((guest) => (
-                                    <tr key={guest.id} className="hover:bg-muted/10 transition-colors group">
+                                    <tr
+                                        key={guest.id}
+                                        className="hover:bg-muted/10 transition-colors group cursor-pointer"
+                                        onClick={() => { setSelectedGuest(guest); setIsProfileOpen(true); }}
+                                    >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="h-10 w-10 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary font-bold">
@@ -262,6 +269,13 @@ export const GuestList = ({ eventId, workspaceId }: GuestListProps) => {
                 onComplete={() => fetchGuests()}
                 eventId={eventId}
                 workspaceId={workspaceId}
+            />
+
+            <GuestProfileModal
+                isOpen={isProfileOpen}
+                guest={selectedGuest}
+                onClose={() => { setIsProfileOpen(false); setSelectedGuest(null); }}
+                onUpdate={fetchGuests}
             />
         </div>
     );
