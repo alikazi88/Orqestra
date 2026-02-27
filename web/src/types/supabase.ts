@@ -132,8 +132,61 @@ export type Database = {
                     },
                 ]
             }
+            dispatch_messages: {
+                Row: {
+                    content: string
+                    created_at: string
+                    event_id: string | null
+                    id: string
+                    type: string
+                    user_id: string | null
+                    workspace_id: string
+                }
+                Insert: {
+                    content: string
+                    created_at?: string
+                    event_id?: string | null
+                    id?: string
+                    type?: string
+                    user_id?: string | null
+                    workspace_id: string
+                }
+                Update: {
+                    content?: string
+                    created_at?: string
+                    event_id?: string | null
+                    id?: string
+                    type?: string
+                    user_id?: string | null
+                    workspace_id?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "dispatch_messages_event_id_fkey"
+                        columns: ["event_id"]
+                        isOneToOne: false
+                        referencedRelation: "events"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "dispatch_messages_user_id_fkey"
+                        columns: ["user_id"]
+                        isOneToOne: false
+                        referencedRelation: "users"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "dispatch_messages_workspace_id_fkey"
+                        columns: ["workspace_id"]
+                        isOneToOne: false
+                        referencedRelation: "workspaces"
+                        referencedColumns: ["id"]
+                    },
+                ]
+            }
             events: {
                 Row: {
+                    branding: Json | null
                     budget_estimated: number | null
                     city: string
                     created_at: string
@@ -142,6 +195,7 @@ export type Database = {
                     health_score: number | null
                     id: string
                     metadata: Json | null
+                    slug: string | null
                     status: string | null
                     title: string
                     type: string
@@ -149,6 +203,7 @@ export type Database = {
                     workspace_id: string
                 }
                 Insert: {
+                    branding?: Json | null
                     budget_estimated?: number | null
                     city: string
                     created_at?: string
@@ -157,6 +212,7 @@ export type Database = {
                     health_score?: number | null
                     id?: string
                     metadata?: Json | null
+                    slug?: string | null
                     status?: string | null
                     title: string
                     type: string
@@ -164,6 +220,7 @@ export type Database = {
                     workspace_id: string
                 }
                 Update: {
+                    branding?: Json | null
                     budget_estimated?: number | null
                     city?: string
                     created_at?: string
@@ -172,6 +229,7 @@ export type Database = {
                     health_score?: number | null
                     id?: string
                     metadata?: Json | null
+                    slug?: string | null
                     status?: string | null
                     title?: string
                     type?: string
@@ -181,6 +239,61 @@ export type Database = {
                 Relationships: [
                     {
                         foreignKeyName: "events_workspace_id_fkey"
+                        columns: ["workspace_id"]
+                        isOneToOne: false
+                        referencedRelation: "workspaces"
+                        referencedColumns: ["id"]
+                    },
+                ]
+            }
+            guest_reminders: {
+                Row: {
+                    event_id: string | null
+                    guest_id: string | null
+                    id: string
+                    metadata: Json | null
+                    reminder_type: string
+                    sent_at: string | null
+                    status: string
+                    workspace_id: string | null
+                }
+                Insert: {
+                    event_id?: string | null
+                    guest_id?: string | null
+                    id?: string
+                    metadata?: Json | null
+                    reminder_type: string
+                    sent_at?: string | null
+                    status: string
+                    workspace_id?: string | null
+                }
+                Update: {
+                    event_id?: string | null
+                    guest_id?: string | null
+                    id?: string
+                    metadata?: Json | null
+                    reminder_type?: string
+                    sent_at?: string | null
+                    status?: string
+                    workspace_id?: string | null
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "guest_reminders_event_id_fkey"
+                        columns: ["event_id"]
+                        isOneToOne: false
+                        referencedRelation: "events"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "guest_reminders_guest_id_fkey"
+                        columns: ["guest_id"]
+                        isOneToOne: false
+                        referencedRelation: "guests"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "guest_reminders_workspace_id_fkey"
                         columns: ["workspace_id"]
                         isOneToOne: false
                         referencedRelation: "workspaces"
@@ -200,6 +313,8 @@ export type Database = {
                     name: string
                     phone: string | null
                     rsvp_status: string | null
+                    seat_number: number | null
+                    table_id: string | null
                     tier: string | null
                     updated_at: string
                     workspace_id: string
@@ -215,6 +330,8 @@ export type Database = {
                     name: string
                     phone?: string | null
                     rsvp_status?: string | null
+                    seat_number?: number | null
+                    table_id?: string | null
                     tier?: string | null
                     updated_at?: string
                     workspace_id: string
@@ -230,6 +347,8 @@ export type Database = {
                     name?: string
                     phone?: string | null
                     rsvp_status?: string | null
+                    seat_number?: number | null
+                    table_id?: string | null
                     tier?: string | null
                     updated_at?: string
                     workspace_id?: string
@@ -244,6 +363,48 @@ export type Database = {
                     },
                     {
                         foreignKeyName: "guests_workspace_id_fkey"
+                        columns: ["workspace_id"]
+                        isOneToOne: false
+                        referencedRelation: "workspaces"
+                        referencedColumns: ["id"]
+                    },
+                ]
+            }
+            payment_reminders: {
+                Row: {
+                    contract_id: string | null
+                    id: string
+                    metadata: Json | null
+                    reminder_type: string
+                    sent_at: string
+                    workspace_id: string | null
+                }
+                Insert: {
+                    contract_id?: string | null
+                    id?: string
+                    metadata?: Json | null
+                    reminder_type: string
+                    sent_at?: string
+                    workspace_id?: string | null
+                }
+                Update: {
+                    contract_id?: string | null
+                    id?: string
+                    metadata?: Json | null
+                    reminder_type?: string
+                    sent_at?: string
+                    workspace_id?: string | null
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "payment_reminders_contract_id_fkey"
+                        columns: ["contract_id"]
+                        isOneToOne: false
+                        referencedRelation: "contracts"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "payment_reminders_workspace_id_fkey"
                         columns: ["workspace_id"]
                         isOneToOne: false
                         referencedRelation: "workspaces"
@@ -389,6 +550,63 @@ export type Database = {
                     },
                 ]
             }
+            ticket_types: {
+                Row: {
+                    created_at: string | null
+                    description: string | null
+                    event_id: string | null
+                    id: string
+                    name: string
+                    perks: Json | null
+                    price: number
+                    quantity_sold: number
+                    quantity_total: number
+                    updated_at: string | null
+                    workspace_id: string | null
+                }
+                Insert: {
+                    created_at?: string | null
+                    description?: string | null
+                    event_id?: string | null
+                    id?: string
+                    name: string
+                    perks?: Json | null
+                    price?: number
+                    quantity_sold?: number
+                    quantity_total?: number
+                    updated_at?: string | null
+                    workspace_id?: string | null
+                }
+                Update: {
+                    created_at?: string | null
+                    description?: string | null
+                    event_id?: string | null
+                    id?: string
+                    name?: string
+                    perks?: Json | null
+                    price?: number
+                    quantity_sold?: number
+                    quantity_total?: number
+                    updated_at?: string | null
+                    workspace_id?: string | null
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "ticket_types_event_id_fkey"
+                        columns: ["event_id"]
+                        isOneToOne: false
+                        referencedRelation: "events"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "ticket_types_workspace_id_fkey"
+                        columns: ["workspace_id"]
+                        isOneToOne: false
+                        referencedRelation: "workspaces"
+                        referencedColumns: ["id"]
+                    },
+                ]
+            }
             users: {
                 Row: {
                     created_at: string
@@ -399,7 +617,7 @@ export type Database = {
                     preferences: Json | null
                     role: string | null
                     updated_at: string
-                    workspace_id: string
+                    workspace_id: string | null
                 }
                 Insert: {
                     created_at?: string
@@ -410,7 +628,7 @@ export type Database = {
                     preferences?: Json | null
                     role?: string | null
                     updated_at?: string
-                    workspace_id: string
+                    workspace_id?: string | null
                 }
                 Update: {
                     created_at?: string
@@ -421,11 +639,66 @@ export type Database = {
                     preferences?: Json | null
                     role?: string | null
                     updated_at?: string
-                    workspace_id?: string
+                    workspace_id?: string | null
                 }
                 Relationships: [
                     {
                         foreignKeyName: "users_workspace_id_fkey"
+                        columns: ["workspace_id"]
+                        isOneToOne: false
+                        referencedRelation: "workspaces"
+                        referencedColumns: ["id"]
+                    },
+                ]
+            }
+            vendor_rfqs: {
+                Row: {
+                    created_at: string
+                    data: Json
+                    event_id: string | null
+                    id: string
+                    status: string
+                    updated_at: string
+                    vendor_id: string
+                    workspace_id: string
+                }
+                Insert: {
+                    created_at?: string
+                    data?: Json
+                    event_id?: string | null
+                    id?: string
+                    status?: string
+                    updated_at?: string
+                    vendor_id: string
+                    workspace_id: string
+                }
+                Update: {
+                    created_at?: string
+                    data?: Json
+                    event_id?: string | null
+                    id?: string
+                    status?: string
+                    updated_at?: string
+                    vendor_id?: string
+                    workspace_id?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "vendor_rfqs_event_id_fkey"
+                        columns: ["event_id"]
+                        isOneToOne: false
+                        referencedRelation: "events"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "vendor_rfqs_vendor_id_fkey"
+                        columns: ["vendor_id"]
+                        isOneToOne: false
+                        referencedRelation: "vendors"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "vendor_rfqs_workspace_id_fkey"
                         columns: ["workspace_id"]
                         isOneToOne: false
                         referencedRelation: "workspaces"
@@ -440,6 +713,7 @@ export type Database = {
                     created_at: string
                     id: string
                     name: string
+                    phone_number: string | null
                     portfolio: Json | null
                     pricing_packages: Json | null
                     risk_score: number | null
@@ -454,6 +728,7 @@ export type Database = {
                     created_at?: string
                     id?: string
                     name: string
+                    phone_number?: string | null
                     portfolio?: Json | null
                     pricing_packages?: Json | null
                     risk_score?: number | null
@@ -468,6 +743,7 @@ export type Database = {
                     created_at?: string
                     id?: string
                     name?: string
+                    phone_number?: string | null
                     portfolio?: Json | null
                     pricing_packages?: Json | null
                     risk_score?: number | null
@@ -479,6 +755,115 @@ export type Database = {
                 Relationships: [
                     {
                         foreignKeyName: "vendors_workspace_id_fkey"
+                        columns: ["workspace_id"]
+                        isOneToOne: false
+                        referencedRelation: "workspaces"
+                        referencedColumns: ["id"]
+                    },
+                ]
+            }
+            venue_layouts: {
+                Row: {
+                    created_at: string
+                    data: Json
+                    id: string
+                    is_template: boolean | null
+                    name: string
+                    updated_at: string
+                    venue_id: string
+                    workspace_id: string
+                }
+                Insert: {
+                    created_at?: string
+                    data?: Json
+                    id?: string
+                    is_template?: boolean | null
+                    name: string
+                    updated_at?: string
+                    venue_id: string
+                    workspace_id: string
+                }
+                Update: {
+                    created_at?: string
+                    data?: Json
+                    id?: string
+                    is_template?: boolean | null
+                    name?: string
+                    updated_at?: string
+                    venue_id?: string
+                    workspace_id?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "venue_layouts_venue_id_fkey"
+                        columns: ["venue_id"]
+                        isOneToOne: false
+                        referencedRelation: "venues"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "venue_layouts_workspace_id_fkey"
+                        columns: ["workspace_id"]
+                        isOneToOne: false
+                        referencedRelation: "workspaces"
+                        referencedColumns: ["id"]
+                    },
+                ]
+            }
+            venue_tours: {
+                Row: {
+                    created_at: string
+                    id: string
+                    notes: string | null
+                    scheduled_at: string
+                    status: string
+                    type: string
+                    updated_at: string
+                    user_id: string
+                    venue_id: string
+                    workspace_id: string
+                }
+                Insert: {
+                    created_at?: string
+                    id?: string
+                    notes?: string | null
+                    scheduled_at: string
+                    status?: string
+                    type: string
+                    updated_at?: string
+                    user_id: string
+                    venue_id: string
+                    workspace_id: string
+                }
+                Update: {
+                    created_at?: string
+                    id?: string
+                    notes?: string | null
+                    scheduled_at?: string
+                    status?: string
+                    type?: string
+                    updated_at?: string
+                    user_id?: string
+                    venue_id?: string
+                    workspace_id?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "venue_tours_user_id_fkey"
+                        columns: ["user_id"]
+                        isOneToOne: false
+                        referencedRelation: "users"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "venue_tours_venue_id_fkey"
+                        columns: ["venue_id"]
+                        isOneToOne: false
+                        referencedRelation: "venues"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "venue_tours_workspace_id_fkey"
                         columns: ["workspace_id"]
                         isOneToOne: false
                         referencedRelation: "workspaces"
@@ -538,6 +923,7 @@ export type Database = {
                 Row: {
                     brand_profile: Json | null
                     created_at: string
+                    created_by: string | null
                     id: string
                     name: string
                     settings: Json | null
@@ -547,6 +933,7 @@ export type Database = {
                 Insert: {
                     brand_profile?: Json | null
                     created_at?: string
+                    created_by?: string | null
                     id?: string
                     name: string
                     settings?: Json | null
@@ -556,6 +943,7 @@ export type Database = {
                 Update: {
                     brand_profile?: Json | null
                     created_at?: string
+                    created_by?: string | null
                     id?: string
                     name?: string
                     settings?: Json | null
