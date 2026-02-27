@@ -29,6 +29,10 @@ import { WaitlistManager } from '../ticketing/WaitlistManager';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { BudgetBuilder } from '../budget/BudgetBuilder';
+import { MoodBoardStudio } from '../decor/MoodBoardStudio';
+import { SustainabilityFlags } from '../decor/SustainabilityFlags';
+import { SocialMediaCalendar } from '../social/SocialMediaCalendar';
+import { ContentCollectionHub } from '../social/ContentCollectionHub';
 
 interface EventDetailProps {
     eventId: string;
@@ -306,7 +310,21 @@ export const EventDetail = ({ eventId, onBack }: EventDetailProps) => {
                     <BudgetBuilder eventId={eventId} workspaceId={workspace?.id || ''} />
                 </TabsContent>
 
-                {['planning', 'vendors', 'runsheet', 'post-event'].map((tabValue) => (
+                <TabsContent value="planning" className="mt-8">
+                    <div className="space-y-12">
+                        <MoodBoardStudio />
+                        <SustainabilityFlags />
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="post-event" className="mt-8">
+                    <div className="space-y-12">
+                        <SocialMediaCalendar />
+                        <ContentCollectionHub />
+                    </div>
+                </TabsContent>
+
+                {['vendors', 'runsheet'].map((tabValue) => (
                     <TabsContent key={tabValue} value={tabValue} className="mt-8">
                         <Card className="p-12 text-center bg-white/50 backdrop-blur-sm border-dashed border-2">
                             <h3 className="text-xl font-bold mb-2 uppercase tracking-tight">Module Coming Soon</h3>
