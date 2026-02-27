@@ -33,6 +33,10 @@ import { MoodBoardStudio } from '../decor/MoodBoardStudio';
 import { SustainabilityFlags } from '../decor/SustainabilityFlags';
 import { SocialMediaCalendar } from '../social/SocialMediaCalendar';
 import { ContentCollectionHub } from '../social/ContentCollectionHub';
+import { AIDebriefSession } from '../post-event/AIDebriefSession';
+import { PostEventReport } from '../post-event/PostEventReport';
+import { BrandEquityTracker } from '../post-event/BrandEquityTracker';
+import { SponsorshipDeliverableTracker } from '../post-event/SponsorshipDeliverableTracker';
 
 interface EventDetailProps {
     eventId: string;
@@ -319,6 +323,10 @@ export const EventDetail = ({ eventId, onBack }: EventDetailProps) => {
 
                 <TabsContent value="post-event" className="mt-8">
                     <div className="space-y-12">
+                        <PostEventReport eventName={event?.title} />
+                        <AIDebriefSession />
+                        <SponsorshipDeliverableTracker />
+                        <BrandEquityTracker />
                         <SocialMediaCalendar />
                         <ContentCollectionHub />
                     </div>
