@@ -25,6 +25,7 @@ import { SeatingChart } from '../guests/seating/SeatingChart';
 import { ReminderSettings } from '../guests/reminders/ReminderSettings';
 import { TicketTypeManager } from '../ticketing/TicketTypeManager';
 import { EventBrandingBuilder } from '../ticketing/EventBrandingBuilder';
+import { WaitlistManager } from '../ticketing/WaitlistManager';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { useAuthStore } from '../../stores/useAuthStore';
 
@@ -274,6 +275,7 @@ export const EventDetail = ({ eventId, onBack }: EventDetailProps) => {
                             <TabsList className="mb-8 p-1.5 bg-muted/30 rounded-2xl border border-border/40 w-fit mx-auto">
                                 <TabsTrigger value="inventory" className="px-8 py-2 text-xs uppercase tracking-widest font-black">Tickets</TabsTrigger>
                                 <TabsTrigger value="branding" className="px-8 py-2 text-xs uppercase tracking-widest font-black">Branding</TabsTrigger>
+                                <TabsTrigger value="waitlist" className="px-8 py-2 text-xs uppercase tracking-widest font-black">Waitlist</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="inventory" className="mt-0">
@@ -286,6 +288,10 @@ export const EventDetail = ({ eventId, onBack }: EventDetailProps) => {
                                     initialBranding={event?.branding}
                                     initialSlug={event?.slug}
                                 />
+                            </TabsContent>
+
+                            <TabsContent value="waitlist" className="mt-0">
+                                <WaitlistManager eventId={eventId} />
                             </TabsContent>
                         </Tabs>
                     </div>

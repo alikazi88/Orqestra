@@ -14,7 +14,6 @@ import {
     Loader2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { cn } from '../../utils/cn';
 
 interface TicketType {
     id: string;
@@ -24,6 +23,10 @@ interface TicketType {
     quantity_sold: number;
     description: string;
     perks: string[];
+    sale_starts_at?: string;
+    sale_ends_at?: string;
+    show_remaining_count?: boolean;
+    remaining_count_threshold?: number;
 }
 
 interface TicketTypeManagerProps {
@@ -40,7 +43,9 @@ export const TicketTypeManager = ({ eventId, workspaceId }: TicketTypeManagerPro
         price: 0,
         quantity_total: 100,
         description: '',
-        perks: []
+        perks: [],
+        show_remaining_count: false,
+        remaining_count_threshold: 10
     });
 
     useEffect(() => {
@@ -50,7 +55,7 @@ export const TicketTypeManager = ({ eventId, workspaceId }: TicketTypeManagerPro
     const fetchTicketTypes = async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await (supabase.from('ticket_types') as any)
+            const { data, error } = await (supabase as any).from('ticket_types')
                 .select('*')
                 .eq('event_id', eventId)
                 .order('price', { ascending: true });
@@ -68,7 +73,7 @@ export const TicketTypeManager = ({ eventId, workspaceId }: TicketTypeManagerPro
         if (!newType.name) return;
 
         try {
-            const { error } = await (supabase.from('ticket_types') as any)
+            const { error } = await (supabase as any).from('ticket_types')
                 .insert([{
                     ...newType,
                     event_id: eventId,
@@ -84,7 +89,9 @@ export const TicketTypeManager = ({ eventId, workspaceId }: TicketTypeManagerPro
                 price: 0,
                 quantity_total: 100,
                 description: '',
-                perks: []
+                perks: [],
+                show_remaining_count: false,
+                remaining_count_threshold: 10
             });
         } catch (err) {
             console.error('Error adding ticket type:', err);
@@ -93,7 +100,7 @@ export const TicketTypeManager = ({ eventId, workspaceId }: TicketTypeManagerPro
 
     const handleDelete = async (id: string) => {
         try {
-            const { error } = await (supabase.from('ticket_types') as any)
+            const { error } = await (supabase as any).from('ticket_types')
                 .delete()
                 .eq('id', id);
 
@@ -202,6 +209,62 @@ export const TicketTypeManager = ({ eventId, workspaceId }: TicketTypeManagerPro
                                     <X className="h-4 w-4" />
                                 </Button>
                             </div>
+                            <div className="md:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-border/20">
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                                        <TrendingUp className="h-3 w-3" /> Sales Schedule
+                                    </h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Sale Starts</label>
+                                            <input
+                                                type="datetime-local"
+                                                className="w-full h-12 bg-white border-2 border-border/40 rounded-xl px-4 font-bold outline-none focus:border-primary/40 transition-all text-sm"
+                                                value={newType.sale_starts_at?.split('.')[0]}
+                                                onChange={(e) => setNewType({ ...newType, sale_starts_at: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Sale Ends</label>
+                                            <input
+                                                type="datetime-local"
+                                                className="w-full h-12 bg-white border-2 border-border/40 rounded-xl px-4 font-bold outline-none focus:border-primary/40 transition-all text-sm"
+                                                value={newType.sale_ends_at?.split('.')[0]}
+                                                onChange={(e) => setNewType({ ...newType, sale_ends_at: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                                        <AlertCircle className="h-3 w-3" /> Scarcity Settings
+                                    </h4>
+                                    <div className="flex items-center gap-8 h-12">
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="checkbox"
+                                                id="show_remaining"
+                                                className="h-5 w-5 rounded border-2 border-border/40 text-primary focus:ring-primary"
+                                                checked={newType.show_remaining_count}
+                                                onChange={(e) => setNewType({ ...newType, show_remaining_count: e.target.checked })}
+                                            />
+                                            <label htmlFor="show_remaining" className="text-xs font-bold uppercase tracking-wider cursor-pointer">Show Low Stock Badge</label>
+                                        </div>
+                                        {newType.show_remaining_count && (
+                                            <div className="flex items-center gap-3 animate-in fade-in slide-in-from-left-2">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Threshold:</label>
+                                                <input
+                                                    type="number"
+                                                    className="w-20 h-10 bg-white border-2 border-border/40 rounded-lg px-3 font-bold outline-none focus:border-primary/40 transition-all"
+                                                    value={newType.remaining_count_threshold}
+                                                    onChange={(e) => setNewType({ ...newType, remaining_count_threshold: parseInt(e.target.value) })}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="md:col-span-12 space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Description</label>
                                 <textarea

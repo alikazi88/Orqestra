@@ -12,13 +12,12 @@ import { EventDetail } from './features/events/EventDetail';
 import { Landing } from './features/auth/Landing';
 import { PublicEventPage } from './features/ticketing/PublicEventPage';
 import { useAuthStore } from './stores/useAuthStore';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { Loader2 } from 'lucide-react';
 
 function App() {
   const { user, loading, setUser, workspace, setWorkspace, signOut } = useAuthStore();
-  const location = useLocation();
 
   const [view, setView] = React.useState<'landing' | 'login' | 'signup'>('landing');
   const [isOnboarding, setIsOnboarding] = React.useState(false);

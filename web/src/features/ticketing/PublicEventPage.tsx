@@ -11,7 +11,10 @@ import {
     Loader2,
     Info,
     ArrowLeft,
-    Plus
+    Plus,
+    Clock,
+    Bell,
+    X
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { cn } from '../../utils/cn';
@@ -31,6 +34,10 @@ interface TicketType {
     quantity_sold: number;
     description: string;
     perks: string[];
+    sale_starts_at?: string;
+    sale_ends_at?: string;
+    show_remaining_count?: boolean;
+    remaining_count_threshold?: number;
 }
 
 export const PublicEventPage = () => {
@@ -40,6 +47,10 @@ export const PublicEventPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
     const [isCheckingOut, setIsCheckingOut] = useState(false);
+    const [waitlistTier, setWaitlistTier] = useState<string | null>(null);
+    const [waitlistData, setWaitlistData] = useState({ name: '', email: '' });
+    const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
+    const [waitlistSuccess, setWaitlistSuccess] = useState(false);
 
     useEffect(() => {
         if (slug) fetchEventDetails();
@@ -48,16 +59,15 @@ export const PublicEventPage = () => {
     const fetchEventDetails = async () => {
         setIsLoading(true);
         try {
-            const { data: eventData, error: eventError } = await supabase
-                .from('events')
+            const { data: eventData, error: eventError } = await (supabase.from('events') as any)
                 .select('*')
-                .eq('slug', slug)
+                .eq('slug', slug || '')
                 .single();
 
             if (eventError) throw eventError;
             setEvent(eventData);
 
-            const { data: ticketData, error: ticketError } = await (supabase.from('ticket_types') as any)
+            const { data: ticketData, error: ticketError } = await (supabase as any).from('ticket_types')
                 .select('*')
                 .eq('event_id', eventData.id)
                 .order('price', { ascending: true });
@@ -82,6 +92,34 @@ export const PublicEventPage = () => {
         const current = selectedTickets[id] || 0;
         if (current > 0) {
             setSelectedTickets({ ...selectedTickets, [id]: current - 1 });
+        }
+    };
+
+    const handleJoinWaitlist = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsJoiningWaitlist(true);
+        try {
+            const { error } = await (supabase as any).from('waitlist')
+                .insert([{
+                    event_id: event.id,
+                    workspace_id: event.workspace_id,
+                    ticket_type_id: waitlistTier,
+                    email: waitlistData.email,
+                    name: waitlistData.name
+                }]);
+
+            if (error) throw error;
+            setWaitlistSuccess(true);
+            setTimeout(() => {
+                setWaitlistTier(null);
+                setWaitlistSuccess(false);
+                setWaitlistData({ name: '', email: '' });
+            }, 3000);
+        } catch (err) {
+            console.error('Error joining waitlist:', err);
+            alert("This email is already on the waitlist for this tier!");
+        } finally {
+            setIsJoiningWaitlist(false);
         }
     };
 
@@ -174,19 +212,33 @@ export const PublicEventPage = () => {
                                 const remaining = type.quantity_total - type.quantity_sold;
                                 const isSoldOut = remaining <= 0;
 
+                                const now = new Date();
+                                const saleStart = type.sale_starts_at ? new Date(type.sale_starts_at) : null;
+                                const saleEnd = type.sale_ends_at ? new Date(type.sale_ends_at) : null;
+                                const hasNotStarted = saleStart && now < saleStart;
+                                const hasEnded = saleEnd && now > saleEnd;
+
+                                const showUrgency = type.show_remaining_count && remaining > 0 && remaining <= (type.remaining_count_threshold || 10);
+
                                 return (
                                     <Card
                                         key={type.id}
                                         className={cn(
-                                            "p-8 bg-white border-2 border-border/40 transition-all group",
-                                            count > 0 && "border-primary/40 bg-primary/[0.01]"
+                                            "p-8 bg-white border-2 border-border/40 transition-all group overflow-hidden relative",
+                                            count > 0 && "border-primary/40 bg-primary/[0.01]",
+                                            (isSoldOut || hasNotStarted || hasEnded) && "opacity-75"
                                         )}
                                     >
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between relative z-10">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-4 mb-2">
                                                     <h4 className="text-xl font-black tracking-tight group-hover:text-primary transition-colors">{type.name}</h4>
                                                     <span className="text-lg font-black text-slate-400">$ {type.price}</span>
+                                                    {showUrgency && (
+                                                        <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase rounded-lg animate-pulse tracking-widest">
+                                                            Selling Fast • Only {remaining} left
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <p className="text-sm text-muted-foreground font-medium mb-4 max-w-md">{type.description}</p>
                                                 <div className="flex flex-wrap gap-2">
@@ -200,7 +252,25 @@ export const PublicEventPage = () => {
 
                                             <div className="flex items-center gap-4">
                                                 {isSoldOut ? (
-                                                    <span className="text-xs font-black uppercase tracking-widest text-red-500 px-6 py-2 bg-red-50 rounded-xl">Sold Out</span>
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <span className="text-xs font-black uppercase tracking-widest text-red-500 px-6 py-2 bg-red-50 rounded-xl mb-1">Sold Out</span>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 hover:bg-slate-50"
+                                                            onClick={() => setWaitlistTier(type.id)}
+                                                        >
+                                                            <Bell className="h-3 w-3 mr-2" /> Join Waitlist
+                                                        </Button>
+                                                    </div>
+                                                ) : hasNotStarted ? (
+                                                    <div className="flex flex-col items-center text-center p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-border/40 min-w-[200px]">
+                                                        <Clock className="h-5 w-5 text-primary mb-2 animate-bounce" />
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-primary">Sales Drop In</p>
+                                                        <p className="text-sm font-black tracking-tight">{saleStart!.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                                                    </div>
+                                                ) : hasEnded ? (
+                                                    <span className="text-xs font-black uppercase tracking-widest text-muted-foreground px-6 py-2 bg-slate-100 rounded-xl">Sales Closed</span>
                                                 ) : (
                                                     <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-border/40">
                                                         <button
@@ -221,6 +291,11 @@ export const PublicEventPage = () => {
                                                     </div>
                                                 )}
                                             </div>
+                                        </div>
+
+                                        {/* Background icon for visual flair */}
+                                        <div className="absolute top-1/2 -right-4 -translate-y-1/2 opacity-[0.02] pointer-events-none group-hover:opacity-[0.05] transition-opacity">
+                                            <Ticket className="h-32 w-32 -rotate-12" />
                                         </div>
                                     </Card>
                                 );
@@ -270,7 +345,13 @@ export const PublicEventPage = () => {
                         <Button
                             className="w-full h-16 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/30"
                             disabled={totalCount === 0 || isCheckingOut}
-                            onClick={() => setIsCheckingOut(true)}
+                            onClick={() => {
+                                setIsCheckingOut(true);
+                                setTimeout(() => {
+                                    setIsCheckingOut(false);
+                                    alert("Checkout simulation: In a production environment, you would now be redirected to the payment gateway.");
+                                }, 1500);
+                            }}
                             style={{ backgroundColor: accentColor }}
                         >
                             {isCheckingOut ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Complete Booking'}
@@ -283,6 +364,72 @@ export const PublicEventPage = () => {
                     </Card>
                 </div>
             </main>
+
+            {/* Waitlist Modal */}
+            {waitlistTier && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !isJoiningWaitlist && setWaitlistTier(null)} />
+                    <Card className="max-w-md w-full p-8 shadow-2xl relative z-10 animate-in zoom-in-95 duration-300">
+                        {waitlistSuccess ? (
+                            <div className="text-center py-8">
+                                <div className="h-16 w-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <Check className="h-8 w-8" />
+                                </div>
+                                <h3 className="text-2xl font-black tracking-tight mb-2 uppercase">You're on the list!</h3>
+                                <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">We'll notify you if more capacity becomes available for {ticketTypes.find(t => t.id === waitlistTier)?.name}.</p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center justify-between mb-8">
+                                    <h3 className="text-lg font-black uppercase tracking-widest flex items-center gap-2">
+                                        <Bell className="h-5 w-5 text-primary" /> Join Waitlist
+                                    </h3>
+                                    <button
+                                        onClick={() => setWaitlistTier(null)}
+                                        className="h-8 w-8 rounded-full hover:bg-slate-100 flex items-center justify-center"
+                                        disabled={isJoiningWaitlist}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                </div>
+                                <form onSubmit={handleJoinWaitlist} className="space-y-6">
+                                    <div className="p-4 bg-muted/30 rounded-2xl border border-border/40">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Tier Interested In</p>
+                                        <p className="text-sm font-black">{ticketTypes.find(t => t.id === waitlistTier)?.name}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Full Name</label>
+                                        <input
+                                            required
+                                            className="w-full h-12 bg-white border-2 border-border/40 rounded-xl px-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                            value={waitlistData.name}
+                                            onChange={(e) => setWaitlistData({ ...waitlistData, name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Email Address</label>
+                                        <input
+                                            required
+                                            type="email"
+                                            className="w-full h-12 bg-white border-2 border-border/40 rounded-xl px-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                            value={waitlistData.email}
+                                            onChange={(e) => setWaitlistData({ ...waitlistData, email: e.target.value })}
+                                        />
+                                    </div>
+                                    <Button
+                                        type="submit"
+                                        className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs"
+                                        disabled={isJoiningWaitlist}
+                                    >
+                                        {isJoiningWaitlist ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                                        {isJoiningWaitlist ? 'Joining...' : 'Add me to Waitlist'}
+                                    </Button>
+                                </form>
+                            </>
+                        )}
+                    </Card>
+                </div>
+            )}
         </div>
     );
 };
