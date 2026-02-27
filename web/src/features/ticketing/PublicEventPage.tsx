@@ -51,6 +51,8 @@ export const PublicEventPage = () => {
     const [waitlistData, setWaitlistData] = useState({ name: '', email: '' });
     const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
     const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+    const [isPaymentSuccess, setIsPaymentSuccess] = useState(false);
+    const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
     useEffect(() => {
         if (slug) fetchEventDetails();
@@ -123,6 +125,98 @@ export const PublicEventPage = () => {
         }
     };
 
+    const handleCheckout = async () => {
+        if (totalCount === 0 || !event) return;
+        setIsCheckingOut(true);
+
+        try {
+            // 1. Create Order via Edge Function
+            const items = Object.entries(selectedTickets)
+                .filter(([_, count]) => count > 0)
+                .map(([id, count]) => ({
+                    ticketTypeId: id,
+                    quantity: count,
+                    workspaceId: event.workspace_id
+                }));
+
+            const { data: orderData, error: orderError } = await (supabase as any).functions.invoke('create-ticket-order', {
+                body: {
+                    eventId: event.id,
+                    items,
+                    customerName: 'Guest User',
+                    customerEmail: 'guest@example.com'
+                }
+            });
+
+            if (orderError) throw orderError;
+
+            // 2. Initialize Razorpay
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: event.name,
+                description: "Ticket Purchase",
+                order_id: orderData.orderId,
+                handler: async (response: any) => {
+                    // 3. Verify Payment
+                    try {
+                        const { error: verifyError } = await (supabase as any).functions.invoke('verify-ticket-payment', {
+                            body: {
+                                razorpayPaymentId: response.razorpay_payment_id,
+                                razorpayOrderId: response.razorpay_order_id,
+                                razorpaySignature: response.razorpay_signature,
+                                dbOrderId: orderData.dbOrderId
+                            }
+                        });
+
+                        if (verifyError) throw verifyError;
+
+                        setIsPaymentSuccess(true);
+                        setLastOrderId(orderData.dbOrderId);
+                        setSelectedTickets({});
+                    } catch (err) {
+                        console.error('Verification error:', err);
+                        alert("Payment verification failed. Please contact support.");
+                    } finally {
+                        setIsCheckingOut(false);
+                    }
+                },
+                prefill: {
+                    name: "Guest User",
+                    email: "guest@example.com"
+                },
+                theme: {
+                    color: accentColor
+                },
+                modal: {
+                    ondismiss: () => setIsCheckingOut(false)
+                }
+            };
+
+            const rzp = new (window as any).Razorpay(options);
+            rzp.open();
+
+        } catch (err) {
+            console.error('Checkout error:', err);
+            alert("Failed to initiate checkout. Please try again.");
+            setIsCheckingOut(false);
+        }
+    };
+
+    useEffect(() => {
+        // Load Razorpay Script
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        document.body.appendChild(script);
+        return () => {
+            if (document.body.contains(script)) {
+                document.body.removeChild(script);
+            }
+        };
+    }, []);
+
     const totalPrice = ticketTypes.reduce((acc, t) => acc + (t.price * (selectedTickets[t.id] || 0)), 0);
     const totalCount = Object.values(selectedTickets).reduce((acc, count) => acc + count, 0);
 
@@ -153,7 +247,7 @@ export const PublicEventPage = () => {
     const accentColor = branding.accent_color || '#7C3AED';
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
+        <div className="min-h-screen bg-[#fbf6ee] flex flex-col font-inter">
             {/* Hero Section */}
             <div className="relative h-[400px] overflow-hidden">
                 <div
@@ -162,7 +256,7 @@ export const PublicEventPage = () => {
                         backgroundImage: `url(${branding.hero_image_url || 'https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?auto=format&fit=crop&q=80&w=2070'})`
                     }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-slate-50" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-[#fbf6ee]" />
 
                 <div className="absolute inset-0 flex items-end">
                     <div className="max-w-6xl mx-auto w-full px-8 pb-12">
@@ -173,17 +267,21 @@ export const PublicEventPage = () => {
                             >
                                 {event.metadata?.type || 'Special Event'}
                             </span>
-                            <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-[0.9] drop-shadow-2xl">
+                            <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter leading-[0.8] drop-shadow-2xl mb-2 italic uppercase">
                                 {event.name}
                             </h1>
-                            <div className="flex flex-wrap gap-6 text-white/90">
-                                <div className="flex items-center gap-2">
-                                    <Calendar className="h-5 w-5 opacity-70" />
-                                    <span className="font-black tracking-tight">{new Date(event.metadata?.date || Date.now()).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                            <div className="flex flex-wrap gap-8 text-white/90">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-white/10 backdrop-blur-md rounded-xl">
+                                        <Calendar className="h-5 w-5" />
+                                    </div>
+                                    <span className="font-black tracking-tight text-lg">{new Date(event.metadata?.date || Date.now()).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <MapPin className="h-5 w-5 opacity-70" />
-                                    <span className="font-black tracking-tight">{event.metadata?.location || 'Venue details inside'}</span>
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-white/10 backdrop-blur-md rounded-xl">
+                                        <MapPin className="h-5 w-5" />
+                                    </div>
+                                    <span className="font-black tracking-tight text-lg">{event.metadata?.location || 'Venue details inside'}</span>
                                 </div>
                             </div>
                         </div>
@@ -224,16 +322,16 @@ export const PublicEventPage = () => {
                                     <Card
                                         key={type.id}
                                         className={cn(
-                                            "p-8 bg-white border-2 border-border/40 transition-all group overflow-hidden relative",
-                                            count > 0 && "border-primary/40 bg-primary/[0.01]",
+                                            "p-10 bg-white border-2 border-border/10 transition-all group overflow-hidden relative rounded-[2.5rem]",
+                                            count > 0 && "border-primary/20 ring-4 ring-primary/5",
                                             (isSoldOut || hasNotStarted || hasEnded) && "opacity-75"
                                         )}
                                     >
                                         <div className="flex items-center justify-between relative z-10">
                                             <div className="flex-1">
-                                                <div className="flex items-center gap-4 mb-2">
-                                                    <h4 className="text-xl font-black tracking-tight group-hover:text-primary transition-colors">{type.name}</h4>
-                                                    <span className="text-lg font-black text-slate-400">$ {type.price}</span>
+                                                <div className="flex items-center gap-4 mb-3">
+                                                    <h4 className="text-2xl font-black tracking-tighter group-hover:text-primary transition-colors italic uppercase">{type.name}</h4>
+                                                    <span className="text-xl font-black text-primary">$ {type.price}</span>
                                                     {showUrgency && (
                                                         <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase rounded-lg animate-pulse tracking-widest">
                                                             Selling Fast • Only {remaining} left
@@ -241,9 +339,9 @@ export const PublicEventPage = () => {
                                                     )}
                                                 </div>
                                                 <p className="text-sm text-muted-foreground font-medium mb-4 max-w-md">{type.description}</p>
-                                                <div className="flex flex-wrap gap-2">
+                                                <div className="flex flex-wrap gap-3">
                                                     {type.perks?.map((perk, i) => (
-                                                        <div key={i} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">
+                                                        <div key={i} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary/60 bg-primary/5 px-4 py-1.5 rounded-full border border-primary/10">
                                                             <Check className="h-3 w-3" /> {perk}
                                                         </div>
                                                     ))}
@@ -345,13 +443,7 @@ export const PublicEventPage = () => {
                         <Button
                             className="w-full h-16 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/30"
                             disabled={totalCount === 0 || isCheckingOut}
-                            onClick={() => {
-                                setIsCheckingOut(true);
-                                setTimeout(() => {
-                                    setIsCheckingOut(false);
-                                    alert("Checkout simulation: In a production environment, you would now be redirected to the payment gateway.");
-                                }, 1500);
-                            }}
+                            onClick={handleCheckout}
                             style={{ backgroundColor: accentColor }}
                         >
                             {isCheckingOut ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Complete Booking'}
@@ -427,6 +519,32 @@ export const PublicEventPage = () => {
                                 </form>
                             </>
                         )}
+                    </Card>
+                </div>
+            )}
+
+            {/* Success Modal */}
+            {isPaymentSuccess && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
+                    <div className="absolute inset-0 bg-primary/20 backdrop-blur-md" />
+                    <Card className="max-w-md w-full p-12 text-center shadow-2xl relative z-10">
+                        <div className="h-20 w-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8">
+                            <Check className="h-10 w-10" />
+                        </div>
+                        <h2 className="text-3xl font-black tracking-tighter mb-4 uppercase">Tickets Confirmed!</h2>
+                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-8 leading-relaxed">
+                            Your order has been successfully placed. We've sent the tickets to your email address. See you at the event!
+                        </p>
+                        <div className="p-4 bg-muted/30 rounded-2xl border border-border/40 mb-8 text-left">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Order ID</p>
+                            <p className="text-sm font-black truncate">{lastOrderId}</p>
+                        </div>
+                        <Button
+                            onClick={() => setIsPaymentSuccess(false)}
+                            className="w-full h-14 rounded-xl font-black uppercase tracking-widest text-xs"
+                        >
+                            Done
+                        </Button>
                     </Card>
                 </div>
             )}

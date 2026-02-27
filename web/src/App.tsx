@@ -11,6 +11,7 @@ import { EventsList } from './features/events/EventsList';
 import { EventDetail } from './features/events/EventDetail';
 import { Landing } from './features/auth/Landing';
 import { PublicEventPage } from './features/ticketing/PublicEventPage';
+import { TeamCommandCenter } from './features/collaboration/TeamCommandCenter';
 import { useAuthStore } from './stores/useAuthStore';
 import { Routes, Route } from 'react-router-dom';
 import { supabase } from './lib/supabase';
@@ -21,7 +22,7 @@ function App() {
 
   const [view, setView] = React.useState<'landing' | 'login' | 'signup'>('landing');
   const [isOnboarding, setIsOnboarding] = React.useState(false);
-  const [currentView, setCurrentView] = React.useState<'dashboard' | 'venues' | 'vendors' | 'events' | 'event-detail'>('dashboard');
+  const [currentView, setCurrentView] = React.useState<'dashboard' | 'venues' | 'vendors' | 'events' | 'event-detail' | 'command-center'>('dashboard');
   const [selectedEventId, setSelectedEventId] = React.useState<string | null>(null);
 
   useEffect(() => {
@@ -120,6 +121,8 @@ function App() {
             onBack={() => setCurrentView('events')}
           />
         ) : <EventsList onSelectEvent={setSelectedEventId} onCreateNew={() => { }} />;
+      case 'command-center':
+        return <TeamCommandCenter />;
       default:
         return <Dashboard />;
     }

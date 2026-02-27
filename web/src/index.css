@@ -1,28 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --background: 40 30% 96%;
+    /* Cream #fbf6eeish */
+    --foreground: 0 0% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+
+    --primary: 330 81% 60%;
+    /* Accent Pink #f06292 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 45 93% 47%;
+    /* Yellow accent */
+    --secondary-foreground: 0 0% 10%;
+
+    --muted: 40 20% 90%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 330 81% 95%;
+    --accent-foreground: 330 81% 40%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 330 81% 60%;
+
+    --radius: 2rem;
+    --shadow-intelly: 0 20px 40px -15px rgba(26, 26, 26, 0.05);
+  }
+
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20;
+    @apply bg-[#fbf6ee] text-foreground antialiased selection:bg-primary/20 cursor-default min-h-screen;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Outfit', sans-serif;
+    @apply font-black tracking-tight;
   }
 }
 
 @layer components {
-  .glass-card {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-soft rounded-3xl;
+  .intelly-sidebar {
+    @apply bg-[#1a1a1a] text-white rounded-[2rem] m-6 h-[calc(100vh-3rem)] sticky top-6 shadow-2xl;
+  }
+
+  .intelly-card {
+    @apply bg-white rounded-[2rem] p-8 border border-border/20 transition-all duration-300 hover:shadow-2xl hover:shadow-[#1a1a1a]/5;
+    shadow: var(--shadow-intelly);
+  }
+
+  .accent-card-yellow {
+    @apply bg-[#fde68a] text-[#713f12];
+  }
+
+  .accent-card-pink {
+    @apply bg-[#f8c8d3] text-[#831843];
+  }
+
+  .accent-card-green {
+    @apply bg-[#bbf7d0] text-[#064e3b];
+  }
+
+  .accent-card-blue {
+    @apply bg-[#bfdbfe] text-[#1e3a8a];
+  }
+
+  .accent-card-purple {
+    @apply bg-[#ddd6fe] text-[#4c1d95];
   }
 
   .pill-nav {
-    @apply px-4 py-2 rounded-full transition-all duration-200 text-sm font-medium;
+    @apply flex items-center gap-3 px-6 py-3 rounded-full transition-all duration-300 text-sm font-bold uppercase tracking-widest;
   }
 
   .pill-nav-active {
-    @apply bg-secondary/10 text-secondary;
+    @apply bg-white text-[#1a1a1a] shadow-lg;
   }
 }
 
-.soft-gradient-bg {
-  background: radial-gradient(circle at 10% 20%, rgba(143, 183, 85, 0.05) 0%, rgba(99, 102, 241, 0.02) 90%);
+/* Custom scrollbar to match aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/10 rounded-full hover:bg-muted-foreground/20 transition-colors;
 }

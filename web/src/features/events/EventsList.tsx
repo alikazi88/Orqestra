@@ -58,12 +58,12 @@ export const EventsList = ({ onSelectEvent, onCreateNew }: EventsListProps) => {
     }
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-10">
             {/* Header / Actions */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-extrabold tracking-tight">Events</h2>
-                    <p className="text-sm text-muted-foreground mt-1">Manage and track all your upcoming and past experiences.</p>
+                    <h2 className="text-4xl font-black tracking-tighter uppercase italic">Events</h2>
+                    <p className="text-xs font-bold text-muted-foreground opacity-60 uppercase tracking-widest mt-1 pl-1">Manage and track all your orchestrations</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -87,25 +87,25 @@ export const EventsList = ({ onSelectEvent, onCreateNew }: EventsListProps) => {
                             <ListIcon className="h-4 w-4" />
                         </button>
                     </div>
-                    <Button onClick={onCreateNew} className="rounded-full px-6 font-bold shadow-lg shadow-primary/20">
-                        <Plus className="mr-2 h-4 w-4" />
+                    <Button onClick={onCreateNew} className="rounded-2xl h-14 px-8 bg-[#1a1a1a] text-white font-black uppercase tracking-widest text-[10px] shadow-2xl transition-transform hover:-translate-y-1 active:translate-y-0">
+                        <Plus className="mr-3 h-4 w-4" />
                         New Event
                     </Button>
                 </div>
             </div>
 
             {/* Filters / Search */}
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-6">
                 <div className="relative flex-1 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-primary group-focus-within:scale-110 transition-transform" />
                     <input
                         type="text"
-                        placeholder="Search events by name, city, or status..."
-                        className="w-full h-12 pl-12 pr-4 bg-white border border-border/60 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+                        placeholder="Search events..."
+                        className="w-full h-14 pl-14 pr-4 bg-white border border-border/10 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all shadow-sm font-bold text-sm placeholder:text-muted-foreground/30"
                     />
                 </div>
-                <Button variant="outline" className="h-12 px-6 rounded-2xl bg-white border-border/60 font-semibold group">
-                    <Filter className="mr-2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                <Button variant="outline" className="h-14 px-8 rounded-2xl bg-white border-border/10 font-black uppercase tracking-widest text-[10px] group shadow-sm">
+                    <Filter className="mr-3 h-4 w-4 text-primary group-hover:rotate-12 transition-transform" />
                     Filters
                 </Button>
             </div>
@@ -144,8 +144,8 @@ export const EventsList = ({ onSelectEvent, onCreateNew }: EventsListProps) => {
                                         {event.status}
                                     </Badge>
                                 </div>
-                                <div className="p-6 flex-1 flex flex-col">
-                                    <h4 className="text-xl font-bold mb-4 tracking-tight group-hover:text-primary transition-colors">
+                                <div className="p-8 flex-1 flex flex-col">
+                                    <h4 className="text-2xl font-black mb-6 tracking-tighter uppercase italic group-hover:text-primary transition-colors">
                                         {event.title}
                                     </h4>
 
@@ -168,21 +168,27 @@ export const EventsList = ({ onSelectEvent, onCreateNew }: EventsListProps) => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between pt-4 border-t border-border/40">
+                                    <div className="flex items-center justify-between pt-6 border-t border-border/10">
                                         <div className="flex -space-x-2">
                                             {[1, 2, 3].map(i => (
-                                                <div key={i} className="h-7 w-7 rounded-full bg-muted border-2 border-white overflow-hidden">
+                                                <div key={i} className="h-8 w-8 rounded-xl bg-muted border-2 border-white overflow-hidden shadow-sm">
                                                     <img src={`https://ui-avatars.com/api/?name=Team+${i}&background=random`} alt="Team member" />
                                                 </div>
                                             ))}
-                                            <div className="h-7 w-7 rounded-full bg-primary/10 text-primary border-2 border-white flex items-center justify-center text-[10px] font-bold">
+                                            <div className="h-8 w-8 rounded-xl bg-white text-muted-foreground border-2 border-white flex items-center justify-center text-[10px] font-bold shadow-sm">
                                                 +2
                                             </div>
                                         </div>
-                                        <div className="text-primary font-bold text-sm inline-flex items-center group-hover:translate-x-1 transition-transform">
-                                            View CMD Center
-                                            <ChevronRight className="ml-1 h-4 w-4" />
-                                        </div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onSelectEvent(event.id); // This will still set the event detail
+                                            }}
+                                            className="text-[10px] font-black uppercase tracking-widest text-[#1a1a1a]/40 group-hover:text-primary transition-colors inline-flex items-center group-hover:translate-x-1 transition-transform"
+                                        >
+                                            Open Center
+                                            <ChevronRight className="ml-2 h-3 w-3" />
+                                        </button>
                                     </div>
                                 </div>
                             </Card>
