@@ -5,7 +5,7 @@ import { Input } from '../../components/ui/Input';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-export const Login = () => {
+export const Login = ({ onSwitch }: { onSwitch: () => void }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -103,7 +103,11 @@ export const Login = () => {
 
                 <p className="text-center text-sm text-muted-foreground mt-8">
                     Don't have an account?{' '}
-                    <button type="button" className="font-bold text-foreground hover:text-primary transition-colors">
+                    <button
+                        type="button"
+                        onClick={onSwitch}
+                        className="font-bold text-foreground hover:text-primary transition-colors"
+                    >
                         Create an account
                     </button>
                 </p>

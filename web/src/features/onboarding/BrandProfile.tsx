@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { Palette, Globe, Camera, Loader2 } from 'lucide-react';
+import { Globe, Camera, Loader2 } from 'lucide-react';
 
 interface BrandProfileProps {
     onNext: (data: any) => void;

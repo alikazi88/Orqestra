@@ -1,6 +1,5 @@
 import { Search, MapPin, Layers, Users, SlidersHorizontal } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
-import { cn } from '../../utils/cn';
 
 export const VenueFilters = () => {
     return (

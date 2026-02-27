@@ -29,10 +29,10 @@ export const CreateWorkspace = ({ onCancel, onSuccess }: { onCancel: () => void,
 
             if (wsError) throw wsError;
 
-            // 2. Link user to workspace as owner
+            // 2. Link user to workspace as owner (using upsert because trigger might have already created it)
             const { error: userError } = await supabase
                 .from('users')
-                .insert({
+                .upsert({
                     id: user.id,
                     workspace_id: wsData.id,
                     email: user.email!,

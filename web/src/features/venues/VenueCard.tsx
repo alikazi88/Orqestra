@@ -1,7 +1,7 @@
 import { MapPin, Users, Heart, Sparkles, Star } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
-import { cn } from '../../utils/cn';
+
 
 interface Venue {
     id: string;
@@ -14,7 +14,7 @@ interface Venue {
     pricing_min: number;
 }
 
-export const VenueCard = ({ venue }: { venue: Venue }) => {
+export const VenueCard = ({ venue, onViewDetails }: { venue: Venue, onViewDetails?: (id: string) => void }) => {
     return (
         <Card glass className="p-0 overflow-hidden group hover:shadow-2xl transition-all duration-500 border-white/20">
             <div className="relative h-56 overflow-hidden">
@@ -69,7 +69,10 @@ export const VenueCard = ({ venue }: { venue: Venue }) => {
                         <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Starts at</p>
                         <p className="text-lg font-black text-foreground">₹{venue.pricing_min.toLocaleString()}<span className="text-xs font-medium text-muted-foreground">/day</span></p>
                     </div>
-                    <button className="h-10 px-6 rounded-xl bg-muted font-bold text-xs hover:bg-foreground hover:text-white transition-all">
+                    <button
+                        onClick={() => onViewDetails?.(venue.id)}
+                        className="h-10 px-6 rounded-xl bg-muted font-bold text-xs hover:bg-foreground hover:text-white transition-all"
+                    >
                         View Details
                     </button>
                 </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Search, User, Settings, LayoutDashboard, Calendar, Ticket, BarChart3, LifeBuoy, MapPin, Users } from 'lucide-react';
+import { Search, Settings, LayoutDashboard, Calendar, Ticket, BarChart3, MapPin, Users } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 interface NavItemProps {
@@ -50,6 +50,8 @@ export const DashboardLayout = ({ children, onSignOut, currentView, onViewChange
                     <NavItem
                         icon={Calendar}
                         label="Events"
+                        active={currentView === 'events'}
+                        onClick={() => onViewChange?.('events')}
                     />
                     <NavItem
                         icon={MapPin}

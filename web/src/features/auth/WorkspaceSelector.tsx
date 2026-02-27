@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Briefcase, ChevronRight, Loader2, Plus, ArrowRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuthStore } '../../stores/useAuthStore';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { CreateWorkspace } from './CreateWorkspace';
 
 export const WorkspaceSelector = ({ onSelect }: { onSelect: (workspace: any) => void }) => {
     const [workspaces, setWorkspaces] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showCreateModal, setShowCreateModal] = useState(false);
     const { user } = useAuthStore();
 
     useEffect(() => {
@@ -19,7 +21,7 @@ export const WorkspaceSelector = ({ onSelect }: { onSelect: (workspace: any) => 
                 .eq('id', user.id);
 
             if (!error && data) {
-                setWorkspaces(data.map(d => d.workspaces));
+                setWorkspaces(data.map(d => d.workspaces).filter(Boolean));
             }
             setLoading(false);
         };
@@ -67,7 +69,10 @@ export const WorkspaceSelector = ({ onSelect }: { onSelect: (workspace: any) => 
                     </button>
                 ))}
 
-                <button className="group block w-full text-left transition-transform active:scale-[0.98]">
+                <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="group block w-full text-left transition-transform active:scale-[0.98]"
+                >
                     <Card className="p-5 flex items-center justify-between border-dashed border-2 bg-muted/20 hover:bg-muted/40 transition-all">
                         <div className="flex items-center gap-4">
                             <div className="h-12 w-12 rounded-2xl bg-white text-muted-foreground border border-border flex items-center justify-center">
@@ -82,8 +87,17 @@ export const WorkspaceSelector = ({ onSelect }: { onSelect: (workspace: any) => 
                     </Card>
                 </button>
             </div>
+
+            {showCreateModal && (
+                <CreateWorkspace
+                    onCancel={() => setShowCreateModal(false)}
+                    onSuccess={(ws) => {
+                        setShowCreateModal(false);
+                        onSelect(ws);
+                    }}
+                />
+            )}
         </div>
     );
 };
 
-import { ArrowRight } from 'lucide-react';
